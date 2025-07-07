@@ -39,6 +39,22 @@ else
   sudo usermod -aG sudo "$FRAPPE_USER"
 fi
 
+# === Section 3.1: Setup SSH key for $FRAPPE_USER ===
+echo "🔐 Setting up SSH access for $FRAPPE_USER..."
+sudo -u "$FRAPPE_USER" -H bash -c "
+mkdir -p /home/$FRAPPE_USER/.ssh
+chmod 700 /home/$FRAPPE_USER/.ssh
+"
+
+if [ -f ~/.ssh/id_rsa.pub ]; then
+  echo "📅 Copying current user's public key to $FRAPPE_USER"
+  sudo cp ~/.ssh/id_rsa.pub /home/$FRAPPE_USER/.ssh/authorized_keys
+  sudo chown $FRAPPE_USER:$FRAPPE_USER /home/$FRAPPE_USER/.ssh/authorized_keys
+  sudo chmod 600 /home/$FRAPPE_USER/.ssh/authorized_keys
+else
+  echo "⚠️  No ~/.ssh/id_rsa.pub found on current user. You must manually add keys to /home/$FRAPPE_USER/.ssh/authorized_keys"
+fi
+
 # === Section 4: Node.js & Yarn ===
 echo "🔧 Installing Node.js LTS and Yarn..."
 sudo npm install -g n
