@@ -1,5 +1,5 @@
 # ERPNext-Installation-Script
-A bash script to install erpnext 15 on a VM machine (Debian/Ubuntu Bookworm/Trixie/Nobel).
+A bash script to install erpnext 15 on a VM machine (Debian/Ubuntu Bookworm/Trixie/Noble).
 
 Requirements: </br>
 1- A VM with Debian 12 Bookworm or Debian 13 Trixie or Ubuntu (Server) 24.04 installed. </br>
