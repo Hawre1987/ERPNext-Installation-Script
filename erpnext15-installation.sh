@@ -33,9 +33,52 @@ sudo apt install -y \
 
 # Install wkhtmltopdf from official source
 echo "📥 Downloading and installing wkhtmltopdf..."
-WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.jammy_amd64.deb"
+
+# Detect OS version
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_CODENAME=$VERSION_CODENAME
+else
+    OS_CODENAME="bookworm"
+fi
+
+echo "Detected OS: $OS_CODENAME"
+
+# Set appropriate download URL based on OS
+case $OS_CODENAME in
+    bookworm|trixie)
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb"
+        ;;
+    bullseye)
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_amd64.deb"
+        ;;
+    noble)
+        # Ubuntu 24.04 - use bookworm version and create symlink
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb"
+        ;;
+    jammy)
+        # Create symlink for libjpeg-turbo8
+        sudo ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8 2>/dev/null || true
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.jammy_amd64.deb"
+        ;;
+    focal)
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.focal_amd64.deb"
+        ;;
+    *)
+        echo "⚠️  Unknown OS version, trying Bookworm package..."
+        WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.bookworm_amd64.deb"
+        ;;
+esac
+
 wget -q $WKHTML_URL -O /tmp/wkhtmltox.deb
-sudo apt install -y /tmp/wkhtmltox.deb
+
+# Try to install, if it fails due to dependencies, create symlink and retry
+if ! sudo apt install -y /tmp/wkhtmltox.deb 2>/dev/null; then
+    echo "⚠️  Dependency issue detected, creating libjpeg symlink..."
+    sudo ln -sf /usr/lib/x86_64-linux-gnu/libjpeg.so.62 /usr/lib/x86_64-linux-gnu/libjpeg.so.8
+    sudo apt install -y /tmp/wkhtmltox.deb
+fi
+
 rm /tmp/wkhtmltox.deb
 
 # === Section 3: Create Frappe User ===
@@ -46,22 +89,6 @@ else
   sudo useradd -m -s /bin/bash "$FRAPPE_USER"
   echo "$FRAPPE_USER:$FRAPPE_PASS" | sudo chpasswd
   sudo usermod -aG sudo "$FRAPPE_USER"
-fi
-
-# === Section 3.1: Setup SSH key for $FRAPPE_USER ===
-echo "🔐 Setting up SSH access for $FRAPPE_USER..."
-sudo -u "$FRAPPE_USER" -H bash -c "
-mkdir -p /home/$FRAPPE_USER/.ssh
-chmod 700 /home/$FRAPPE_USER/.ssh
-"
-
-if [ -f ~/.ssh/id_rsa.pub ]; then
-  echo "📅 Copying current user's public key to $FRAPPE_USER"
-  sudo cp ~/.ssh/id_rsa.pub /home/$FRAPPE_USER/.ssh/authorized_keys
-  sudo chown $FRAPPE_USER:$FRAPPE_USER /home/$FRAPPE_USER/.ssh/authorized_keys
-  sudo chmod 600 /home/$FRAPPE_USER/.ssh/authorized_keys
-else
-  echo "⚠️  No ~/.ssh/id_rsa.pub found on current user. You must manually add keys to /home/$FRAPPE_USER/.ssh/authorized_keys"
 fi
 
 # === Section 4: Node.js & Yarn ===
@@ -96,7 +123,7 @@ cd /home/$FRAPPE_USER
 bench init frappe-bench --frappe-branch version-15
 "
 
-# Ensure nginx can access bench directory (Moved to line 70)
+# Ensure nginx can access bench directory
 sudo chmod -R o+rx /home/$FRAPPE_USER
 
 # === Section 8: Create Frappe Site ===
@@ -164,10 +191,14 @@ cd /home/$FRAPPE_USER/frappe-bench
 bench get-app hrms --branch version-15
 bench --site $SITE_NAME install-app hrms
 "
+# === Section 12: Restart Services ===
+echo "🔄 Restarting all services..."
+sudo supervisorctl restart all
+sudo systemctl reload nginx
 
-# === Section 12: Done ===
+# === Section 13: Done ===
 echo ""
-echo "✅ ERPNext v15, Payments, HRMS, Frappe Chat, and Foxgroup Weightbridge installed successfully!"
+echo "✅ ERPNext v15, Payments, HRMS installed successfully!"
 echo "🌐 Access your site at: http://localhost or http://$SITE_NAME"
 echo "👤 Administrator password you set earlier is now active."
 echo ""
