@@ -22,12 +22,21 @@ echo ""
 echo "📦 Installing system packages (Node, Redis, Nginx, Ansible, etc)..."
 sudo apt update
 sudo apt install -y \
-  git curl python3-dev python3-pip python3-setuptools \
+  git curl wget python3-dev python3-pip python3-setuptools \
   python3-venv build-essential \
   redis-server mariadb-server mariadb-client \
   libmariadb-dev libmariadb-dev-compat \
-  wkhtmltopdf xvfb libfontconfig1 libxrender1 libxext6 \
-  cron nodejs npm supervisor nginx ansible
+  xvfb libfontconfig1 libxrender1 libxext6 \
+  cron nodejs npm supervisor nginx ansible \
+  fontconfig libfreetype6 libjpeg-turbo8 libpng16-16 \
+  libx11-6 libxcb1 libxext6 libxrender1
+
+# Install wkhtmltopdf from official source
+echo "📥 Downloading and installing wkhtmltopdf..."
+WKHTML_URL="https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-3/wkhtmltox_0.12.6.1-3.jammy_amd64.deb"
+wget -q $WKHTML_URL -O /tmp/wkhtmltox.deb
+sudo apt install -y /tmp/wkhtmltox.deb
+rm /tmp/wkhtmltox.deb
 
 # === Section 3: Create Frappe User ===
 echo "👤 Creating user: $FRAPPE_USER"
@@ -156,9 +165,19 @@ bench get-app hrms --branch version-15
 bench --site $SITE_NAME install-app hrms
 "
 
-# === Section 12: Done ===
+# === Section 14: Restart Services ===
+echo "🔄 Restarting all services..."
+sudo supervisorctl restart all
+sudo systemctl reload nginx
+
+# === Section 15: Done ===
 echo ""
-echo "✅ ERPNext v15, Payments, and HRMS installed successfully!"
+echo "✅ ERPNext v15, Payments, HRMS installed successfully!"
 echo "🌐 Access your site at: http://localhost or http://$SITE_NAME"
 echo "👤 Administrator password you set earlier is now active."
+echo ""
+echo "📋 Installed apps:"
+echo "   - ERPNext v15"
+echo "   - Payments"
+echo "   - HRMS"
 echo ""
