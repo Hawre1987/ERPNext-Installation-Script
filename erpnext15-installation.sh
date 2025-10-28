@@ -28,8 +28,8 @@ sudo apt install -y \
   libmariadb-dev libmariadb-dev-compat \
   xvfb libfontconfig1 libxrender1 libxext6 \
   cron nodejs npm supervisor nginx ansible \
-  fontconfig libfreetype6 libjpeg-turbo8 libpng16-16 \
-  libx11-6 libxcb1 libxext6 libxrender1
+  fontconfig libfreetype6 libjpeg62-turbo \
+  libx11-6 libxcb1
 
 # Install wkhtmltopdf from official source
 echo "📥 Downloading and installing wkhtmltopdf..."
@@ -165,14 +165,9 @@ bench get-app hrms --branch version-15
 bench --site $SITE_NAME install-app hrms
 "
 
-# === Section 14: Restart Services ===
-echo "🔄 Restarting all services..."
-sudo supervisorctl restart all
-sudo systemctl reload nginx
-
-# === Section 15: Done ===
+# === Section 12: Done ===
 echo ""
-echo "✅ ERPNext v15, Payments, HRMS installed successfully!"
+echo "✅ ERPNext v15, Payments, HRMS, Frappe Chat, and Foxgroup Weightbridge installed successfully!"
 echo "🌐 Access your site at: http://localhost or http://$SITE_NAME"
 echo "👤 Administrator password you set earlier is now active."
 echo ""
